@@ -18,6 +18,7 @@ CWD_DIR_NAME = $(notdir $(CWD))
 OBJECT_EXT = o
 DEPEND_EXT = d
 CPPSRC_EXT = cpp
+CSRC_EXT = c
 HEADER_EXT = h
 STATICLIB_EXT = a
 DYNAMICLIB_EXT = so
@@ -54,12 +55,20 @@ ifndef ARFLAGS
 	ARFLAGS = rc
 endif
 
+ifndef CC
+	CC = gcc
+endif
+
 ifndef CXX
 	CXX = g++
 endif
 
 ifndef SED
 	SED = sed
+endif
+
+ifndef CFLAGS
+	CFLAGS = -g -O2 -pipe -D_GNU_SOURCE -fPIC -Wall -Werror -m64
 endif
 
 ifndef CPPFLAGS
@@ -70,9 +79,13 @@ ifndef CPPCHECK
 	CPPCHECK = cppcheck
 endif
 
-SRCS=$(wildcard $(SRC_DIR)/*.cpp)
-OBJECTS = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
-DEPENDS = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.d,$(SRCS))
+
+C_SRCS = $(wildcard $(SRC_DIR)/*.$(CSRC_EXT))
+C_OBJECTS = $(patsubst $(SRC_DIR)/%.$(CSRC_EXT),$(OBJ_DIR)/%.$(OBJECT_EXT),$(C_SRCS))
+C_DEPENDS = $(patsubst $(SRC_DIR)/%.$(CSRC_EXT),$(OBJ_DIR)/%.$(DEPEND_EXT),$(C_SRCS))
+CPP_SRCS = $(wildcard $(SRC_DIR)/*.$(CPPSRC_EXT))
+CPP_OBJECTS = $(patsubst $(SRC_DIR)/%.$(CPPSRC_EXT),$(OBJ_DIR)/%.$(OBJECT_EXT),$(CPP_SRCS))
+CPP_DEPENDS = $(patsubst $(SRC_DIR)/%.$(CPPSRC_EXT),$(OBJ_DIR)/%.$(DEPEND_EXT),$(CPP_SRCS))
 
 INC += -I$(INC_DIR)
 
@@ -95,17 +108,30 @@ $(DYNAMIC_SO): $(TARGET)
 	$(CXX) $(CPPFLAGS) $(LIB) -o $@
 	@echo ""
 
-$(TARGET): $(OBJECTS) $(DEPENDS)
+$(TARGET): $(C_OBJECTS) $(C_DEPENDS) $(CPP_OBJECTS) $(CPP_DEPENDS)
 	@echo -e "$(BLUE)Packaging $@ ... $(RESET)"
-	$(AR) $(ARFLAGS) $@ $(OBJECTS)
+	$(AR) $(ARFLAGS) $@ $(C_OBJECTS) $(CPP_OBJECTS)
 	@echo ""
 
-$(OBJECTS): $(OBJ_DIR)/%.$(OBJECT_EXT): $(SRC_DIR)/%.$(CPPSRC_EXT)
+$(C_OBJECTS): $(OBJ_DIR)/%.$(OBJECT_EXT): $(SRC_DIR)/%.$(CSRC_EXT)
+	@echo -e "$(GREEN)Compiling $< ==> $@ ... $(RESET)"
+	$(CC) $(INC) $(CFLAGS) -c $< -o $@
+	@echo ""
+
+$(CPP_OBJECTS): $(OBJ_DIR)/%.$(OBJECT_EXT): $(SRC_DIR)/%.$(CPPSRC_EXT)
 	@echo -e "$(GREEN)Compiling $< ==> $@ ... $(RESET)"
 	$(CXX) $(INC) $(CPPFLAGS) -c $< -o $@
 	@echo ""
 
-$(DEPENDS): $(OBJ_DIR)/%.$(DEPEND_EXT): $(SRC_DIR)/%.$(CPPSRC_EXT)
+$(C_DEPENDS): $(OBJ_DIR)/%.$(DEPEND_EXT): $(SRC_DIR)/%.$(CSRC_EXT)
+	@echo -e "$(GREEN)Generating $< ==> $@ ... $(RESET)"
+	@echo -e "$(CC) -MM $(INC) $(CPPFLAGS) $< > $@"
+	@$(CC) -MM $(INC) $(CFLAGS) $< > $@.$$$$; \
+		$(SED) 's,\($*\)\.o[ :]*,$(OBJ_DIR)\1.o $@ : ,g' < $@.$$$$ > $@; \
+		$(RM) $@.$$$$
+	@echo ""
+
+$(CPP_DEPENDS): $(OBJ_DIR)/%.$(DEPEND_EXT): $(SRC_DIR)/%.$(CPPSRC_EXT)
 	@echo -e "$(GREEN)Generating $< ==> $@ ... $(RESET)"
 	@echo -e "$(CXX) -MM $(INC) $(CPPFLAGS) $< > $@"
 	@$(CXX) -MM $(INC) $(CPPFLAGS) $< > $@.$$$$; \
@@ -114,6 +140,6 @@ $(DEPENDS): $(OBJ_DIR)/%.$(DEPEND_EXT): $(SRC_DIR)/%.$(CPPSRC_EXT)
 	@echo ""
 
 ifneq "$(MAKECMDGOALS)" "clean"
-sinclude $(DEPENDS)
+sinclude $(C_DEPENDS) $(CPP_DEPENDS)
 endif
 
