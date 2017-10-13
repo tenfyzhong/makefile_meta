@@ -1,16 +1,11 @@
-RED 		= \\e[1m\\e[31m
-DARKRED 	= \\e[31m
-GREEN 		= \\e[1m\\e[32m
-DARKGREEN 	= \\e[32m
-YELLOW 		= \\e[1m\\e[33m
-DARKYELLOW 	= \\e[33m
-BLUE 		= \\e[1m\\e[34m
-DARKBLUE 	= \\e[34m
-MAGENTA 	= \\e[1m\\e[35m
-DARKMAGENTA = \\e[35m
-CYAN 		= \\e[1m\\e[36m
-DARKCYAN 	= \\e[36m
-RESET  		= \\e[m
+RED 		= \033[31m
+GREEN 		= \033[32m
+YELLOW 		= \033[33m
+BLUE 		= \033[34m
+MAGENTA 	= \033[35m
+CYAN 		= \033[36m
+WHITE 		= \033[37m
+RESET  		= \033[0m
 
 CWD = $(shell pwd)
 CWD_DIR_NAME = $(notdir $(CWD))
@@ -104,36 +99,36 @@ $(DYNAMIC_SO): LIB := $(TARGET) $(LIB)
 $(DYNAMIC_SO): CPPFLAGS += -shared
 
 $(DYNAMIC_SO): $(TARGET)
-	@echo -e "$(DARKBLUE)Generating $@ ... $(RESET)"
+	@echo "$(DARKBLUE)Generating $@ ... $(RESET)"
 	$(CXX) $(CPPFLAGS) $(LIB) -o $@
 	@echo ""
 
 $(TARGET): $(C_OBJECTS) $(C_DEPENDS) $(CPP_OBJECTS) $(CPP_DEPENDS)
-	@echo -e "$(BLUE)Packaging $@ ... $(RESET)"
+	@echo "$(BLUE)Packaging $@ ... $(RESET)"
 	$(AR) $(ARFLAGS) $@ $(C_OBJECTS) $(CPP_OBJECTS)
 	@echo ""
 
 $(C_OBJECTS): $(OBJ_DIR)/%.$(OBJECT_EXT): $(SRC_DIR)/%.$(CSRC_EXT)
-	@echo -e "$(GREEN)Compiling $< ==> $@ ... $(RESET)"
+	@echo "$(GREEN)Compiling $< ==> $@ ... $(RESET)"
 	$(CC) $(INC) $(CFLAGS) -c $< -o $@
 	@echo ""
 
 $(CPP_OBJECTS): $(OBJ_DIR)/%.$(OBJECT_EXT): $(SRC_DIR)/%.$(CPPSRC_EXT)
-	@echo -e "$(GREEN)Compiling $< ==> $@ ... $(RESET)"
+	@echo "$(GREEN)Compiling $< ==> $@ ... $(RESET)"
 	$(CXX) $(INC) $(CPPFLAGS) -c $< -o $@
 	@echo ""
 
 $(C_DEPENDS): $(OBJ_DIR)/%.$(DEPEND_EXT): $(SRC_DIR)/%.$(CSRC_EXT)
-	@echo -e "$(GREEN)Generating $< ==> $@ ... $(RESET)"
-	@echo -e "$(CC) -MM $(INC) $(CPPFLAGS) $< > $@"
+	@echo "$(GREEN)Generating $< ==> $@ ... $(RESET)"
+	@echo "$(CC) -MM $(INC) $(CPPFLAGS) $< > $@"
 	@$(CC) -MM $(INC) $(CFLAGS) $< > $@.$$$$; \
 		$(SED) 's,\($*\)\.o[ :]*,$(OBJ_DIR)\1.o $@ : ,g' < $@.$$$$ > $@; \
 		$(RM) $@.$$$$
 	@echo ""
 
 $(CPP_DEPENDS): $(OBJ_DIR)/%.$(DEPEND_EXT): $(SRC_DIR)/%.$(CPPSRC_EXT)
-	@echo -e "$(GREEN)Generating $< ==> $@ ... $(RESET)"
-	@echo -e "$(CXX) -MM $(INC) $(CPPFLAGS) $< > $@"
+	@echo "$(GREEN)Generating $< ==> $@ ... $(RESET)"
+	@echo "$(CXX) -MM $(INC) $(CPPFLAGS) $< > $@"
 	@$(CXX) -MM $(INC) $(CPPFLAGS) $< > $@.$$$$; \
 		$(SED) 's,\($*\)\.o[ :]*,$(OBJ_DIR)\1.o $@ : ,g' < $@.$$$$ > $@; \
 		$(RM) $@.$$$$
